@@ -115,7 +115,8 @@ function getCityCode(cityName) {
 // 使用高德地图API获取天气信息
 async function getAmapWeatherData(cityCode) {
   try {
-    const url = `https://restapi.amap.com/v3/weather/weatherInfo?key=${config.weather.amapApiKey}&city=${cityCode}&extensions=all`;
+    const amapApiKey = process.env.AMAP_API_KEY;
+    const url = `https://restapi.amap.com/v3/weather/weatherInfo?key=${amapApiKey}&city=${cityCode}&extensions=all`;
     const response = await axios.get(url);
     const data = response.data;
 
@@ -150,7 +151,8 @@ async function getAmapWeatherData(cityCode) {
 // 使用OpenWeatherMap API获取天气信息
 async function getOpenWeatherData(city) {
   try {
-    const url = `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${config.weather.openWeatherApiKey}&units=metric&lang=zh_cn`;
+    const openWeatherApiKey = process.env.OPENWEATHER_API_KEY;
+    const url = `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${openWeatherApiKey}&units=metric&lang=zh_cn`;
     const response = await axios.get(url);
     const data = response.data;
 
@@ -177,14 +179,19 @@ async function getOpenWeatherData(city) {
 
 // 统一的天气数据获取接口
 async function getWeatherData(city) {
-  if (config.weather.provider === "amap") {
-    if (!config.weather.amapApiKey) {
+  // 实时获取环境变量，确保使用最新值
+  const provider = process.env.WEATHER_PROVIDER || "amap";
+  const amapApiKey = process.env.AMAP_API_KEY;
+  const openWeatherApiKey = process.env.OPENWEATHER_API_KEY;
+
+  if (provider === "amap") {
+    if (!amapApiKey) {
       throw new Error("请设置 AMAP_API_KEY 环境变量");
     }
     const cityCode = getCityCode(city);
     return await getAmapWeatherData(cityCode);
-  } else if (config.weather.provider === "openweather") {
-    if (!config.weather.openWeatherApiKey) {
+  } else if (provider === "openweather") {
+    if (!openWeatherApiKey) {
       throw new Error("请设置 OPENWEATHER_API_KEY 环境变量");
     }
     return await getOpenWeatherData(city);

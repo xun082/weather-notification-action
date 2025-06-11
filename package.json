@@ -1,0 +1,46 @@
+{
+  "name": "weather-notification-action",
+  "version": "2.0.0",
+  "description": "功能强大的天气通知GitHub Action，支持高德地图和OpenWeatherMap双数据源",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "ncc build src/index.js -o dist --license licenses.txt",
+    "package": "npm run build && npm run package-check",
+    "package-check": "test -f dist/index.js",
+    "start": "node src/weather-notification.js",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "city-finder": "node src/city-code-finder.js",
+    "find-city": "node src/city-code-finder.js",
+    "list-cities": "node src/city-code-finder.js --list",
+    "cities-by-province": "node src/city-code-finder.js --province"
+  },
+  "keywords": [
+    "github-action",
+    "weather",
+    "email",
+    "notification",
+    "amap",
+    "openweathermap",
+    "chinese",
+    "html"
+  ],
+  "author": "Weather Notification Team",
+  "license": "MIT",
+  "dependencies": {
+    "@actions/core": "^1.10.1",
+    "axios": "^1.6.0",
+    "nodemailer": "^6.9.0",
+    "dotenv": "^16.3.0"
+  },
+  "devDependencies": {
+    "@vercel/ncc": "^0.38.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/YOUR_USERNAME/weather-notification-action.git"
+  },
+  "bugs": {
+    "url": "https://github.com/YOUR_USERNAME/weather-notification-action/issues"
+  },
+  "homepage": "https://github.com/YOUR_USERNAME/weather-notification-action#readme"
+}

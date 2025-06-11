@@ -1,0 +1,76 @@
+name: 'Weather Notification Action'
+description: '🌤️ 功能强大的天气通知Action，支持高德地图和OpenWeatherMap双数据源'
+author: 'Weather Notification Team'
+
+branding:
+  icon: 'cloud'
+  color: 'blue'
+
+inputs:
+  # 天气API配置
+  weather_provider:
+    description: '天气数据提供商 (amap 或 openweather)'
+    required: false
+    default: 'amap'
+  
+  amap_api_key:
+    description: '高德地图API密钥'
+    required: false
+    
+  openweather_api_key:
+    description: 'OpenWeatherMap API密钥'
+    required: false
+    
+  # 城市配置
+  city:
+    description: '城市名称或6位城市编码'
+    required: false
+    default: 'Beijing'
+    
+  # 邮件服务器配置
+  smtp_host:
+    description: 'SMTP服务器地址'
+    required: true
+    default: 'smtp.gmail.com'
+    
+  smtp_port:
+    description: 'SMTP端口'
+    required: false
+    default: '587'
+    
+  smtp_user:
+    description: '发送邮箱地址'
+    required: true
+    
+  smtp_pass:
+    description: '邮箱密码或应用专用密码'
+    required: true
+    
+  # 收件人配置
+  recipient_emails:
+    description: '收件人邮箱地址（多个用逗号分隔）'
+    required: true
+    
+  # 邮件配置
+  email_subject:
+    description: '邮件主题（可选，默认自动生成）'
+    required: false
+    
+  sender_name:
+    description: '发送者名称'
+    required: false
+    default: '天气通知助手'
+
+outputs:
+  status:
+    description: '执行状态 (success/failure)'
+  message:
+    description: '执行结果消息'
+  weather_data:
+    description: '天气数据JSON字符串'
+  recipients_count:
+    description: '邮件发送的收件人数量'
+
+runs:
+  using: 'node20'
+  main: 'dist/index.js' 

@@ -117,14 +117,31 @@ async function getAmapWeatherData(cityCode) {
   try {
     const amapApiKey = process.env.AMAP_API_KEY;
     const url = `https://restapi.amap.com/v3/weather/weatherInfo?key=${amapApiKey}&city=${cityCode}&extensions=all`;
+
+    console.log(`🌐 请求高德地图API: ${url.replace(amapApiKey, "***")}`);
+
     const response = await axios.get(url);
     const data = response.data;
 
+    console.log(`📊 高德地图API响应状态: ${data.status}`);
+    console.log(`📋 API响应数据:`, JSON.stringify(data, null, 2));
+
     if (data.status !== "1") {
-      throw new Error(`高德地图API错误: ${data.info}`);
+      throw new Error(`高德地图API错误: ${data.info || "未知错误"}`);
+    }
+
+    // 检查 lives 数组是否存在且不为空
+    if (!data.lives || !Array.isArray(data.lives) || data.lives.length === 0) {
+      throw new Error(`高德地图API返回数据格式错误: lives数组为空或不存在`);
     }
 
     const live = data.lives[0];
+
+    // 检查必要的字段是否存在
+    if (!live.city || !live.temperature) {
+      throw new Error(`高德地图API返回数据不完整: 缺少必要字段`);
+    }
+
     const forecast = data.forecasts && data.forecasts[0];
 
     return {
@@ -133,9 +150,9 @@ async function getAmapWeatherData(cityCode) {
       province: live.province,
       adcode: live.adcode,
       temperature: parseInt(live.temperature),
-      temperatureFloat: parseFloat(live.temperature_float),
-      humidity: parseInt(live.humidity),
-      humidityFloat: parseFloat(live.humidity_float),
+      temperatureFloat: parseFloat(live.temperature_float || live.temperature),
+      humidity: parseInt(live.humidity || 0),
+      humidityFloat: parseFloat(live.humidity_float || live.humidity || 0),
       weather: live.weather,
       windDirection: live.winddirection,
       windPower: live.windpower,
@@ -144,6 +161,10 @@ async function getAmapWeatherData(cityCode) {
     };
   } catch (error) {
     console.error("获取高德地图天气数据失败:", error.message);
+    if (error.response) {
+      console.error("API响应状态:", error.response.status);
+      console.error("API响应数据:", error.response.data);
+    }
     throw error;
   }
 }

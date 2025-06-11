@@ -1,6 +1,6 @@
 # 🌤️ Weather Notification Action
 
-[![GitHub Release](https://img.shields.io/github/v/release/YOUR_USERNAME/weather-notification-action)](https://github.com/YOUR_USERNAME/weather-notification-action/releases)
+[![GitHub Release](https://img.shields.io/github/v/release/xun082/weather-notification-action)](https://github.com/xun082/weather-notification-action/releases)
 [![GitHub Marketplace](https://img.shields.io/badge/Marketplace-Weather%20Notification-blue.svg?colorA=24292e&colorB=0366d6&style=flat&longCache=true&logo=data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAAM6wAADOsB5dZE0gAAABl0RVh0U29mdHdhcmUAd3d3Lmlua3NjYXBlLm9yZ5vuPBoAAAERSURBVCiRhZG/SsMxFEafKoEMHuxg6yDYyYMIhgO7m0YdOjgH8eygK+DC4FYU+nHk=)]()
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
@@ -45,7 +45,7 @@ jobs:
 
     steps:
       - name: Send Weather Notification
-        uses: YOUR_USERNAME/weather-notification-action@v2
+        uses: xun082/weather-notification-action@v2
         with:
           # 天气API配置（至少配置一个）
           weather_provider: "amap" # 或 'openweather'
@@ -84,7 +84,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Send Beijing Weather
-        uses: YOUR_USERNAME/weather-notification-action@v2
+        uses: xun082/weather-notification-action@v2
         with:
           weather_provider: "amap"
           amap_api_key: ${{ secrets.AMAP_API_KEY }}
@@ -99,7 +99,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Send New York Weather
-        uses: YOUR_USERNAME/weather-notification-action@v2
+        uses: xun082/weather-notification-action@v2
         with:
           weather_provider: "openweather"
           openweather_api_key: ${{ secrets.OPENWEATHER_API_KEY }}
@@ -139,7 +139,7 @@ jobs:
 
     steps:
       - name: Send Weather Notification
-        uses: YOUR_USERNAME/weather-notification-action@v2
+        uses: xun082/weather-notification-action@v2
         with:
           weather_provider: ${{ github.event.inputs.provider }}
           amap_api_key: ${{ secrets.AMAP_API_KEY }}
@@ -192,7 +192,7 @@ jobs:
 ```yaml
 - name: Send Weather Notification
   id: weather
-  uses: YOUR_USERNAME/weather-notification-action@v2
+  uses: xun082/weather-notification-action@v2
   with:
     # ... 其他参数
 
@@ -341,7 +341,7 @@ SMTP_PASS=your-app-password
 
 ```bash
 # 克隆仓库
-git clone https://github.com/YOUR_USERNAME/weather-notification-action.git
+git clone https://github.com/xun082/weather-notification-action.git
 cd weather-notification-action
 
 # 安装依赖
@@ -381,8 +381,8 @@ MIT License - 详见 [LICENSE](LICENSE) 文件
 ### 遇到问题？
 
 1. 📖 先查看 [快速开始指南](QUICK_START.md) 和 [故障排除](#故障排除)
-2. 🔍 搜索 [已知问题](https://github.com/YOUR_USERNAME/weather-notification-action/issues)
-3. 💬 提交 [新问题](https://github.com/YOUR_USERNAME/weather-notification-action/issues/new)
+2. 🔍 搜索 [已知问题](https://github.com/xun082/weather-notification-action/issues)
+3. 💬 提交 [新问题](https://github.com/xun082/weather-notification-action/issues/new)
 
 ### 需要帮助配置邮箱？
 

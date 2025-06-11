@@ -43,7 +43,7 @@ jobs:
 
     steps:
       - name: 发送天气通知
-        uses: YOUR_USERNAME/weather-notification-action@v2
+        uses: xun082/weather-notification-action@v2
         with:
                   # 必需参数
         smtp_user: ${{ secrets.SMTP_USER }}
@@ -229,7 +229,7 @@ jobs:
   beijing:
     runs-on: ubuntu-latest
     steps:
-           - uses: YOUR_USERNAME/weather-notification-action@v2
+           - uses: xun082/weather-notification-action@v2
        with:
          city: "北京"
          recipient_emails: "请替换为北京团队的邮箱@company.com"
@@ -240,7 +240,7 @@ jobs:
   shanghai:
     runs-on: ubuntu-latest
     steps:
-    - uses: YOUR_USERNAME/weather-notification-action@v2
+    - uses: xun082/weather-notification-action@v2
       with:
         city: "上海"
         recipient_emails: "请替换为上海团队的邮箱@company.com"
@@ -266,7 +266,7 @@ jobs:
     steps:
       - name: 获取天气信息
         id: weather
-        uses: YOUR_USERNAME/weather-notification-action@v2
+        uses: xun082/weather-notification-action@v2
         with:
           city: "北京"
           smtp_user: ${{ secrets.SMTP_USER }}
@@ -293,7 +293,7 @@ jobs:
   workday-weather:
     runs-on: ubuntu-latest
     steps:
-      - uses: YOUR_USERNAME/weather-notification-action@v2
+      - uses: xun082/weather-notification-action@v2
         with:
           city: "深圳"
           smtp_user: ${{ secrets.SMTP_USER }}
@@ -362,8 +362,8 @@ jobs:
 如果遇到问题：
 
 1. 📖 查看 [完整文档](README.md)
-2. 🔍 搜索 [已知问题](https://github.com/YOUR_USERNAME/weather-notification-action/issues)
-3. 💬 提交 [新问题](https://github.com/YOUR_USERNAME/weather-notification-action/issues/new)
+2. 🔍 搜索 [已知问题](https://github.com/xun082/weather-notification-action/issues)
+3. 💬 提交 [新问题](https://github.com/xun082/weather-notification-action/issues/new)
 
 ---
 

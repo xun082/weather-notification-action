@@ -18,7 +18,7 @@ jobs:
   weather:
     runs-on: ubuntu-latest
     steps:
-      - uses: YOUR_USERNAME/weather-notification-action@v2
+      - uses: xun082/weather-notification-action@v2
         with:
           # ⚠️ 必须修改：改为你的邮箱
           recipient_emails: "张三的邮箱@gmail.com"

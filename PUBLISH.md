@@ -37,6 +37,7 @@ npm run package-check
 2. 点击右侧的 "Releases"
 3. 点击 "Create a new release"
 4. 填写信息：
+
    - **Tag version**: `v2.0.0`
    - **Release title**: `🌤️ Weather Notification Action v2.0.0`
    - **Description**:
@@ -55,7 +56,7 @@ npm run package-check
      ### 📦 使用方法
 
      ```yaml
-     - uses: YOUR_USERNAME/weather-notification-action@v2
+     - uses: xun082/weather-notification-action@v2
        with:
          weather_provider: "amap"
          amap_api_key: ${{ secrets.AMAP_API_KEY }}
@@ -306,7 +307,7 @@ git push -f origin v2
 ### 📋 使用方法
 
 ```yaml
-- uses: YOUR_USERNAME/weather-notification-action@v2.x.x
+- uses: xun082/weather-notification-action@v2.x.x
   with:
     # 参数示例
 ```
@@ -330,13 +331,13 @@ git push -f origin v2
 
 ```yaml
 # 使用最新版本
-- uses: YOUR_USERNAME/weather-notification-action@v2
+- uses: xun082/weather-notification-action@v2
 
 # 使用特定版本
-- uses: YOUR_USERNAME/weather-notification-action@v2.0.0
+- uses: xun082/weather-notification-action@v2.0.0
 
 # 使用开发版本（不推荐生产环境）
-- uses: YOUR_USERNAME/weather-notification-action@main
+- uses: xun082/weather-notification-action@main
 ````
 
 🎊 恭喜！你的 Weather Notification Action 现在可以被全世界的开发者使用了！

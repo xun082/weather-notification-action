@@ -37,10 +37,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/YOUR_USERNAME/weather-notification-action.git"
+    "url": "https://github.com/xun082/weather-notification-action.git"
   },
   "bugs": {
-    "url": "https://github.com/YOUR_USERNAME/weather-notification-action/issues"
+    "url": "https://github.com/xun082/weather-notification-action/issues"
   },
-  "homepage": "https://github.com/YOUR_USERNAME/weather-notification-action#readme"
+  "homepage": "https://github.com/xun082/weather-notification-action#readme"
 }

@@ -6,17 +6,17 @@
 
 ### 1. 替换用户名占位符
 
-在发布前，需要将所有文档中的 `YOUR_USERNAME` 替换为你的 GitHub 用户名：
+在发布前，需要将所有文档中的 `xun082` 替换为你的 GitHub 用户名：
 
 ```bash
 # 批量替换所有文档中的占位符
-sed -i 's/YOUR_USERNAME/你的GitHub用户名/g' README.md HOW_TO_USE.md USAGE_EXAMPLES.md PUBLISH.md package.json .github/workflows/release.yml
+sed -i 's/xun082/你的GitHub用户名/g' README.md HOW_TO_USE.md USAGE_EXAMPLES.md PUBLISH.md package.json .github/workflows/release.yml
 ```
 
 例如，如果你的 GitHub 用户名是 `john-doe`，运行：
 
 ```bash
-sed -i 's/YOUR_USERNAME/john-doe/g' README.md HOW_TO_USE.md USAGE_EXAMPLES.md PUBLISH.md package.json .github/workflows/release.yml
+sed -i 's/xun082/john-doe/g' README.md HOW_TO_USE.md USAGE_EXAMPLES.md PUBLISH.md package.json .github/workflows/release.yml
 ```
 
 ### 2. 更新作者信息
@@ -82,7 +82,7 @@ git push origin v2.0.0
 
 发布前确保：
 
-- [ ] 所有 `YOUR_USERNAME` 已替换为实际用户名
+- [ ] 所有 `xun082` 已替换为实际用户名
 - [ ] 作者信息已更新
 - [ ] `dist/index.js` 文件已生成并提交
 - [ ] 没有 `node_modules` 目录被提交

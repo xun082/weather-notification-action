@@ -98,7 +98,7 @@ jobs:
           
           ### 📦 Installation
           ```yaml
-          - uses: YOUR_USERNAME/weather-notification-action@${{ github.ref }}
+          - uses: xun082/weather-notification-action@${{ github.ref }}
             with:
               weather_provider: 'amap'
               amap_api_key: ${{ secrets.AMAP_API_KEY }}

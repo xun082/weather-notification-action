@@ -17,7 +17,7 @@ jobs:
   weather:
     runs-on: ubuntu-latest
     steps:
-      - uses: YOUR_USERNAME/weather-notification-action@v2
+      - uses: xun082/weather-notification-action@v2
         with:
           amap_api_key: ${{ secrets.AMAP_API_KEY }}
           smtp_user: ${{ secrets.SMTP_USER }}
@@ -38,7 +38,7 @@ jobs:
   weather:
     runs-on: ubuntu-latest
     steps:
-      - uses: YOUR_USERNAME/weather-notification-action@v2
+      - uses: xun082/weather-notification-action@v2
         with:
           weather_provider: "openweather"
           openweather_api_key: ${{ secrets.OPENWEATHER_API_KEY }}
@@ -66,7 +66,7 @@ jobs:
     if: github.event.schedule == '0 0 * * *'
     runs-on: ubuntu-latest
     steps:
-      - uses: YOUR_USERNAME/weather-notification-action@v2
+      - uses: xun082/weather-notification-action@v2
         with:
           amap_api_key: ${{ secrets.AMAP_API_KEY }}
           city: "北京"
@@ -80,7 +80,7 @@ jobs:
     if: github.event.schedule == '0 4 * * *'
     runs-on: ubuntu-latest
     steps:
-      - uses: YOUR_USERNAME/weather-notification-action@v2
+      - uses: xun082/weather-notification-action@v2
         with:
           amap_api_key: ${{ secrets.AMAP_API_KEY }}
           city: "上海"
@@ -94,7 +94,7 @@ jobs:
     if: github.event.schedule == '0 8 * * *'
     runs-on: ubuntu-latest
     steps:
-      - uses: YOUR_USERNAME/weather-notification-action@v2
+      - uses: xun082/weather-notification-action@v2
         with:
           amap_api_key: ${{ secrets.AMAP_API_KEY }}
           city: "440300" # 深圳城市编码
@@ -128,7 +128,7 @@ jobs:
           ]
     runs-on: ubuntu-latest
     steps:
-      - uses: YOUR_USERNAME/weather-notification-action@v2
+      - uses: xun082/weather-notification-action@v2
         with:
           weather_provider: "amap"
           amap_api_key: ${{ secrets.AMAP_API_KEY }}
@@ -151,7 +151,7 @@ jobs:
           ]
     runs-on: ubuntu-latest
     steps:
-      - uses: YOUR_USERNAME/weather-notification-action@v2
+      - uses: xun082/weather-notification-action@v2
         with:
           weather_provider: "openweather"
           openweather_api_key: ${{ secrets.OPENWEATHER_API_KEY }}
@@ -218,7 +218,7 @@ jobs:
               ;;
           esac
 
-      - uses: YOUR_USERNAME/weather-notification-action@v2
+      - uses: xun082/weather-notification-action@v2
         with:
           weather_provider: ${{ github.event.inputs.provider }}
           amap_api_key: ${{ secrets.AMAP_API_KEY }}
@@ -251,7 +251,7 @@ jobs:
     steps:
       - name: Get Weather Data
         id: weather
-        uses: YOUR_USERNAME/weather-notification-action@v2
+        uses: xun082/weather-notification-action@v2
         with:
           amap_api_key: ${{ secrets.AMAP_API_KEY }}
           city: "北京"
@@ -278,7 +278,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: YOUR_USERNAME/weather-notification-action@v2
+      - uses: xun082/weather-notification-action@v2
         with:
           amap_api_key: ${{ secrets.AMAP_API_KEY }}
           city: "北京"
@@ -304,7 +304,7 @@ jobs:
   qq-weather:
     runs-on: ubuntu-latest
     steps:
-      - uses: YOUR_USERNAME/weather-notification-action@v2
+      - uses: xun082/weather-notification-action@v2
         with:
           amap_api_key: ${{ secrets.AMAP_API_KEY }}
           city: "广州"
@@ -329,7 +329,7 @@ jobs:
   netease-weather:
     runs-on: ubuntu-latest
     steps:
-      - uses: YOUR_USERNAME/weather-notification-action@v2
+      - uses: xun082/weather-notification-action@v2
         with:
           amap_api_key: ${{ secrets.AMAP_API_KEY }}
           city: "南京"
@@ -354,7 +354,7 @@ jobs:
   outlook-weather:
     runs-on: ubuntu-latest
     steps:
-      - uses: YOUR_USERNAME/weather-notification-action@v2
+      - uses: xun082/weather-notification-action@v2
         with:
           openweather_api_key: ${{ secrets.OPENWEATHER_API_KEY }}
           weather_provider: "openweather"
@@ -387,7 +387,7 @@ jobs:
       # 尝试使用高德地图
       - name: Try AMap Weather
         id: amap
-        uses: YOUR_USERNAME/weather-notification-action@v2
+        uses: xun082/weather-notification-action@v2
         continue-on-error: true
         with:
           weather_provider: "amap"
@@ -400,7 +400,7 @@ jobs:
       # 如果高德地图失败，使用OpenWeatherMap作为备用
       - name: Fallback to OpenWeatherMap
         if: steps.amap.outputs.status != 'success'
-        uses: YOUR_USERNAME/weather-notification-action@v2
+        uses: xun082/weather-notification-action@v2
         with:
           weather_provider: "openweather"
           openweather_api_key: ${{ secrets.OPENWEATHER_API_KEY }}
@@ -446,7 +446,7 @@ jobs:
     if: github.event.inputs.test_mode == 'quick'
     runs-on: ubuntu-latest
     steps:
-      - uses: YOUR_USERNAME/weather-notification-action@v2
+      - uses: xun082/weather-notification-action@v2
         with:
           amap_api_key: ${{ secrets.AMAP_API_KEY }}
           city: "110000"
@@ -463,7 +463,7 @@ jobs:
         city: ["北京", "Shanghai", "London,UK"]
     runs-on: ubuntu-latest
     steps:
-      - uses: YOUR_USERNAME/weather-notification-action@v2
+      - uses: xun082/weather-notification-action@v2
         continue-on-error: true
         with:
           weather_provider: ${{ matrix.provider }}
@@ -481,7 +481,7 @@ jobs:
       matrix:
         run: [1, 2, 3, 4, 5]
     steps:
-      - uses: YOUR_USERNAME/weather-notification-action@v2
+      - uses: xun082/weather-notification-action@v2
         with:
           amap_api_key: ${{ secrets.AMAP_API_KEY }}
           city: "Beijing"
@@ -509,7 +509,7 @@ jobs:
     steps:
       - name: Send Weather Notification
         id: weather
-        uses: YOUR_USERNAME/weather-notification-action@v2
+        uses: xun082/weather-notification-action@v2
         with:
           amap_api_key: ${{ secrets.AMAP_API_KEY }}
           city: "北京"

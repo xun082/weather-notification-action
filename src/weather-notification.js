@@ -738,7 +738,7 @@ function generateWeatherEmailHTML(weatherData) {
 // 发送邮件
 async function sendWeatherEmail(emailList, weatherData) {
   try {
-    const transporter = nodemailer.createTransporter(config.smtp);
+    const transporter = nodemailer.createTransport(config.smtp);
 
     const providerName =
       weatherData.provider === "amap" ? "高德地图" : "OpenWeatherMap";

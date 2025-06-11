@@ -43121,7 +43121,7 @@ async function run() {
     const { generateWeatherEmailHTML } = __nccwpck_require__(8503);
     const nodemailer = __nccwpck_require__(9892);
 
-    const transporter = nodemailer.createTransporter(smtpConfig);
+    const transporter = nodemailer.createTransport(smtpConfig);
 
     const mailOptions = {
       from: `"${inputs.senderName}" <${inputs.smtpUser}>`,
@@ -43933,7 +43933,7 @@ function generateWeatherEmailHTML(weatherData) {
 // 发送邮件
 async function sendWeatherEmail(emailList, weatherData) {
   try {
-    const transporter = nodemailer.createTransporter(config.smtp);
+    const transporter = nodemailer.createTransport(config.smtp);
 
     const providerName =
       weatherData.provider === "amap" ? "高德地图" : "OpenWeatherMap";

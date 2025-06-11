@@ -126,7 +126,7 @@ async function run() {
     const { generateWeatherEmailHTML } = require("./weather-notification");
     const nodemailer = require("nodemailer");
 
-    const transporter = nodemailer.createTransporter(smtpConfig);
+    const transporter = nodemailer.createTransport(smtpConfig);
 
     const mailOptions = {
       from: `"${inputs.senderName}" <${inputs.smtpUser}>`,

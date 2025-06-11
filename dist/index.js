@@ -42995,10 +42995,7 @@ module.exports = {
 
 const core = __nccwpck_require__(9999);
 const {
-  main,
   getWeatherData,
-  sendWeatherEmail,
-  validateConfig,
   getCityCode,
   cityCodeMap,
 } = __nccwpck_require__(8503);
@@ -43930,165 +43927,6 @@ function generateWeatherEmailHTML(weatherData) {
   }
 }
 
-// 发送邮件
-async function sendWeatherEmail(emailList, weatherData) {
-  try {
-    const transporter = nodemailer.createTransport(config.smtp);
-
-    const providerName =
-      weatherData.provider === "amap" ? "高德地图" : "OpenWeatherMap";
-    const cityName =
-      weatherData.provider === "amap"
-        ? `${weatherData.province}${weatherData.city}`
-        : weatherData.city;
-
-    const mailOptions = {
-      from: `"天气通知助手" <${config.smtp.auth.user}>`,
-      to: emailList.join(", "),
-      subject: `🌤️ ${cityName}天气预报 - ${new Date().toLocaleDateString(
-        "zh-CN"
-      )} (${providerName})`,
-      html: generateWeatherEmailHTML(weatherData),
-      attachments: [],
-    };
-
-    const info = await transporter.sendMail(mailOptions);
-    console.log("✅ 邮件发送成功:", info.messageId);
-    console.log("📧 收件人列表:", emailList.join(", "));
-    console.log("🏙️ 天气城市:", cityName);
-    console.log("🌡️ 当前温度:", `${weatherData.temperature}°C`);
-    console.log("📊 数据提供商:", providerName);
-
-    return info;
-  } catch (error) {
-    console.error("❌ 发送邮件失败:", error.message);
-    throw error;
-  }
-}
-
-// 验证配置信息
-function validateConfig() {
-  const errors = [];
-
-  // 验证邮件配置
-  if (!config.smtp.auth.user || !config.smtp.auth.pass) {
-    errors.push("请设置 SMTP_USER 和 SMTP_PASS 环境变量");
-  }
-
-  if (!config.emails) {
-    errors.push("请设置 RECIPIENT_EMAILS 环境变量");
-  }
-
-  // 验证天气API配置
-  if (config.weather.provider === "amap" && !config.weather.amapApiKey) {
-    errors.push("使用高德地图API时，请设置 AMAP_API_KEY 环境变量");
-  }
-
-  if (
-    config.weather.provider === "openweather" &&
-    !config.weather.openWeatherApiKey
-  ) {
-    errors.push(
-      "使用OpenWeatherMap API时，请设置 OPENWEATHER_API_KEY 环境变量"
-    );
-  }
-
-  if (!["amap", "openweather"].includes(config.weather.provider)) {
-    errors.push('WEATHER_PROVIDER 必须设置为 "amap" 或 "openweather"');
-  }
-
-  return errors;
-}
-
-// 显示城市编码信息
-function displayCityCodeInfo() {
-  console.log("🏙️ 支持的城市及编码:");
-  console.log("=====================================");
-
-  const cities = Object.keys(cityCodeMap);
-  const chineseCities = cities.filter((city) => /[\u4e00-\u9fa5]/.test(city));
-  const englishCities = cities.filter((city) => !/[\u4e00-\u9fa5]/.test(city));
-
-  console.log("📍 中文城市名:");
-  chineseCities.forEach((city) => {
-    console.log(`   ${city}: ${cityCodeMap[city]}`);
-  });
-
-  console.log("\n📍 英文城市名:");
-  englishCities.forEach((city) => {
-    console.log(`   ${city}: ${cityCodeMap[city]}`);
-  });
-
-  console.log("\n💡 使用说明:");
-  console.log("   - 可以使用城市名称（中文或英文）");
-  console.log("   - 可以直接使用6位数字的城市编码");
-  console.log("   - 如果城市不在列表中，将默认使用北京(110000)");
-  console.log("=====================================\n");
-}
-
-// 主函数
-async function main() {
-  try {
-    console.log("🚀 开始执行天气通知任务...");
-    console.log(
-      `📡 数据提供商: ${
-        config.weather.provider === "amap" ? "高德地图" : "OpenWeatherMap"
-      }`
-    );
-
-    // 验证配置
-    const configErrors = validateConfig();
-    if (configErrors.length > 0) {
-      console.error("❌ 配置验证失败:");
-      configErrors.forEach((error) => console.error(`   - ${error}`));
-      process.exit(1);
-    }
-
-    // 显示城市编码信息（仅当使用高德地图API时）
-    if (config.weather.provider === "amap") {
-      displayCityCodeInfo();
-    }
-
-    // 解析邮箱列表
-    const emailList = config.emails
-      .split(",")
-      .map((email) => email.trim())
-      .filter((email) => email);
-
-    if (emailList.length === 0) {
-      throw new Error("没有有效的邮箱地址");
-    }
-
-    console.log(`📍 获取 ${config.weather.city} 的天气信息...`);
-    const weatherData = await getWeatherData(config.weather.city);
-
-    console.log(`📧 发送天气信息到 ${emailList.length} 个邮箱...`);
-    await sendWeatherEmail(emailList, weatherData);
-
-    console.log("✅ 天气通知任务执行成功！");
-    console.log("🎉 所有收件人都已收到最新的天气信息！");
-  } catch (error) {
-    console.error("❌ 任务执行失败:", error.message);
-
-    // 提供调试信息
-    if (error.message.includes("API")) {
-      console.error("💡 API调用失败，请检查:");
-      console.error("   - API密钥是否正确");
-      console.error("   - 网络连接是否正常");
-      console.error("   - API调用次数是否超限");
-    }
-
-    if (error.message.includes("SMTP") || error.message.includes("邮件")) {
-      console.error("💡 邮件发送失败，请检查:");
-      console.error("   - SMTP服务器配置是否正确");
-      console.error("   - 邮箱账号密码是否正确");
-      console.error("   - 是否开启了邮箱的SMTP服务");
-    }
-
-    process.exit(1);
-  }
-}
-
 // 导出工具函数，便于测试和其他模块使用
 module.exports = {
   getWeatherData,
@@ -44097,15 +43935,11 @@ module.exports = {
   generateWeatherEmailHTML,
   generateAmapWeatherEmailHTML,
   generateOpenWeatherEmailHTML,
-  sendWeatherEmail,
   getCityCode,
   cityCodeMap,
-  validateConfig,
-  displayCityCodeInfo,
-  main,
 };
 
-// 执行主函数
+// 如果直接运行此文件，提示使用正确的入口
 if (false) {}
 
 

@@ -1,18 +1,14 @@
 {
   "name": "weather-notification-action",
-  "version": "2.0.5",
+  "version": "2.1.0",
   "description": "功能强大的天气通知GitHub Action，支持高德地图和OpenWeatherMap双数据源",
   "main": "dist/index.js",
   "scripts": {
     "build": "ncc build src/index.js -o dist --license licenses.txt",
     "package": "pnpm run build && pnpm run package-check",
     "package-check": "test -f dist/index.js",
-    "start": "node src/weather-notification.js",
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "city-finder": "node src/city-code-finder.js",
-    "find-city": "node src/city-code-finder.js",
-    "list-cities": "node src/city-code-finder.js --list",
-    "cities-by-province": "node src/city-code-finder.js --province"
+    "start": "node src/index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
     "github-action",

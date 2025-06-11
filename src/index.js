@@ -1,9 +1,6 @@
 const core = require("@actions/core");
 const {
-  main,
   getWeatherData,
-  sendWeatherEmail,
-  validateConfig,
   getCityCode,
   cityCodeMap,
 } = require("./weather-notification");

@@ -43311,33 +43311,71 @@ function getCityCode(cityName) {
 async function getAmapWeatherData(cityCode) {
   try {
     const amapApiKey = process.env.AMAP_API_KEY;
-    const url = `https://restapi.amap.com/v3/weather/weatherInfo?key=${amapApiKey}&city=${cityCode}&extensions=all`;
 
-    console.log(`🌐 请求高德地图API: ${url.replace(amapApiKey, "***")}`);
+    // 首先获取实时天气数据 (extensions=base)
+    const liveUrl = `https://restapi.amap.com/v3/weather/weatherInfo?key=${amapApiKey}&city=${cityCode}&extensions=base`;
+    console.log(
+      `🌐 请求高德地图实时天气API: ${liveUrl.replace(amapApiKey, "***")}`
+    );
 
-    const response = await axios.get(url);
-    const data = response.data;
+    const liveResponse = await axios.get(liveUrl);
+    const liveData = liveResponse.data;
 
-    console.log(`📊 高德地图API响应状态: ${data.status}`);
-    console.log(`📋 API响应数据:`, JSON.stringify(data, null, 2));
+    console.log(`📊 实时天气API响应状态: ${liveData.status}`);
 
-    if (data.status !== "1") {
-      throw new Error(`高德地图API错误: ${data.info || "未知错误"}`);
+    if (liveData.status !== "1") {
+      throw new Error(
+        `高德地图实时天气API错误: ${liveData.info || "未知错误"}`
+      );
     }
 
-    // 检查 lives 数组是否存在且不为空
-    if (!data.lives || !Array.isArray(data.lives) || data.lives.length === 0) {
+    // 检查 lives 数组
+    if (
+      !liveData.lives ||
+      !Array.isArray(liveData.lives) ||
+      liveData.lives.length === 0
+    ) {
       throw new Error(`高德地图API返回数据格式错误: lives数组为空或不存在`);
     }
 
-    const live = data.lives[0];
+    const live = liveData.lives[0];
 
-    // 检查必要的字段是否存在
-    if (!live.city || !live.temperature) {
+    // 检查必要的字段
+    if (!live.city || live.temperature === undefined) {
       throw new Error(`高德地图API返回数据不完整: 缺少必要字段`);
     }
 
-    const forecast = data.forecasts && data.forecasts[0];
+    console.log(`🌡️ 实时天气数据获取成功: ${live.city} ${live.temperature}°C`);
+
+    // 获取预报天气数据 (extensions=all)
+    let forecast = null;
+    try {
+      const forecastUrl = `https://restapi.amap.com/v3/weather/weatherInfo?key=${amapApiKey}&city=${cityCode}&extensions=all`;
+      console.log(
+        `🌐 请求高德地图预报天气API: ${forecastUrl.replace(amapApiKey, "***")}`
+      );
+
+      const forecastResponse = await axios.get(forecastUrl);
+      const forecastData = forecastResponse.data;
+
+      console.log(`📊 预报天气API响应状态: ${forecastData.status}`);
+
+      if (
+        forecastData.status === "1" &&
+        forecastData.forecasts &&
+        forecastData.forecasts.length > 0
+      ) {
+        forecast = forecastData.forecasts[0];
+        console.log(
+          `📅 预报天气数据获取成功: ${forecast.casts?.length || 0} 天预报`
+        );
+      }
+    } catch (forecastError) {
+      console.warn(
+        "获取预报天气数据失败，将只返回实时数据:",
+        forecastError.message
+      );
+    }
 
     return {
       provider: "amap",

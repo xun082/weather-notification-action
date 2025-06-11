@@ -345,13 +345,13 @@ git clone https://github.com/xun082/weather-notification-action.git
 cd weather-notification-action
 
 # 安装依赖
-npm install
+pnpm install
 
 # 构建Action
-npm run build
+pnpm run build
 
 # 本地测试
-npm run test
+pnpm run test
 ```
 
 ## 📄 许可证

@@ -47,13 +47,13 @@ Copyright (c) 2024 你的名字或组织名
 
 ```bash
 # 安装依赖
-npm install
+pnpm install
 
 # 构建 Action
-npm run build
+pnpm run build
 
 # 验证构建
-npm run package-check
+pnpm run package-check
 ```
 
 ### 4. 提交代码
@@ -106,7 +106,7 @@ git push origin v2.0.0
 当需要发布新版本时：
 
 1. 更新代码
-2. 运行 `npm run build`
+2. 运行 `pnpm run build`
 3. 更新 `package.json` 中的版本号
 4. 提交代码
 5. 创建新的 tag 和 release

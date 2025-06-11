@@ -5,7 +5,7 @@
   "main": "dist/index.js",
   "scripts": {
     "build": "ncc build src/index.js -o dist --license licenses.txt",
-    "package": "npm run build && npm run package-check",
+    "package": "pnpm run build && pnpm run package-check",
     "package-check": "test -f dist/index.js",
     "start": "node src/weather-notification.js",
     "test": "echo \"Error: no test specified\" && exit 1",

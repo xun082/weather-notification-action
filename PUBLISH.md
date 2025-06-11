@@ -10,13 +10,13 @@
 
 ```bash
 # 安装依赖
-npm install
+pnpm install
 
 # 构建Action（将src文件打包成dist/index.js）
-npm run build
+pnpm run build
 
 # 验证构建结果
-npm run package-check
+pnpm run package-check
 ```
 
 #### 检查必需文件
@@ -216,15 +216,15 @@ git push -f origin v2
 1. **依赖更新**：
 
    ```bash
-   npm audit
-   npm update
-   npm run build
+   pnpm audit
+   pnpm update
+   pnpm run build
    ```
 
 2. **安全检查**：
 
    ```bash
-   npm audit --audit-level high
+   pnpm audit --audit-level high
    ```
 
 3. **文档更新**：

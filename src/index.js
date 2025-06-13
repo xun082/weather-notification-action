@@ -12,9 +12,7 @@ async function run() {
 
     // 从 GitHub Action inputs 读取参数
     const inputs = {
-      weatherProvider: core.getInput("weather_provider") || "amap",
       amapApiKey: core.getInput("amap_api_key"),
-      openweatherApiKey: core.getInput("openweather_api_key"),
       city: core.getInput("city") || "Beijing",
       smtpHost: core.getInput("smtp_host") || "smtp.gmail.com",
       smtpPort: core.getInput("smtp_port") || "587",
@@ -34,23 +32,13 @@ async function run() {
       throw new Error("❌ 收件人邮箱不能为空：请提供 recipient_emails");
     }
 
-    // 验证天气API配置
-    if (inputs.weatherProvider === "amap" && !inputs.amapApiKey) {
-      throw new Error("❌ 使用高德地图时，请提供 amap_api_key");
-    }
-
-    if (inputs.weatherProvider === "openweather" && !inputs.openweatherApiKey) {
-      throw new Error("❌ 使用OpenWeatherMap时，请提供 openweather_api_key");
-    }
-
-    if (!["amap", "openweather"].includes(inputs.weatherProvider)) {
-      throw new Error('❌ weather_provider 必须是 "amap" 或 "openweather"');
+    // 验证高德地图API配置
+    if (!inputs.amapApiKey) {
+      throw new Error("❌ 请提供 amap_api_key");
     }
 
     // 设置环境变量供主模块使用
-    process.env.WEATHER_PROVIDER = inputs.weatherProvider;
     process.env.AMAP_API_KEY = inputs.amapApiKey;
-    process.env.OPENWEATHER_API_KEY = inputs.openweatherApiKey;
     process.env.CITY = inputs.city;
     process.env.SMTP_HOST = inputs.smtpHost;
     process.env.SMTP_PORT = inputs.smtpPort;
@@ -58,25 +46,19 @@ async function run() {
     process.env.SMTP_PASS = inputs.smtpPass;
     process.env.RECIPIENT_EMAILS = inputs.recipientEmails;
 
-    console.log(
-      `📡 数据提供商: ${
-        inputs.weatherProvider === "amap" ? "高德地图" : "OpenWeatherMap"
-      }`
-    );
+    console.log(`📡 数据提供商: 高德地图`);
     console.log(`📍 查询城市: ${inputs.city}`);
 
-    // 显示城市编码信息（仅当使用高德地图时）
-    if (inputs.weatherProvider === "amap") {
-      const cityCode = getCityCode(inputs.city);
-      console.log(`🏙️ 城市编码: ${cityCode}`);
+    // 显示城市编码信息
+    const cityCode = getCityCode(inputs.city);
+    console.log(`🏙️ 城市编码: ${cityCode}`);
 
-      if (/^\d{6}$/.test(inputs.city)) {
-        const cities = Object.keys(cityCodeMap).filter(
-          (city) => cityCodeMap[city] === inputs.city
-        );
-        if (cities.length > 0) {
-          console.log(`📍 对应城市: ${cities.join(", ")}`);
-        }
+    if (/^\d{6}$/.test(inputs.city)) {
+      const cities = Object.keys(cityCodeMap).filter(
+        (city) => cityCodeMap[city] === inputs.city
+      );
+      if (cities.length > 0) {
+        console.log(`📍 对应城市: ${cities.join(", ")}`);
       }
     }
 
@@ -106,18 +88,12 @@ async function run() {
     };
 
     // 生成邮件主题
-    const providerName =
-      weatherData.provider === "amap" ? "高德地图" : "OpenWeatherMap";
-    const cityName =
-      weatherData.provider === "amap"
-        ? `${weatherData.province}${weatherData.city}`
-        : weatherData.city;
-
+    const cityName = `${weatherData.province}${weatherData.city}`;
     const defaultSubject =
       inputs.emailSubject ||
       `🌤️ ${cityName}天气预报 - ${new Date().toLocaleDateString(
         "zh-CN"
-      )} (${providerName})`;
+      )} (高德地图)`;
 
     // 使用weather-notification模块发送邮件
     const { generateWeatherEmailHTML } = require("./weather-notification");
@@ -138,7 +114,7 @@ async function run() {
     console.log(`📧 收件人: ${emailList.join(", ")}`);
     console.log(`🏙️ 天气城市: ${cityName}`);
     console.log(`🌡️ 当前温度: ${weatherData.temperature}°C`);
-    console.log(`📊 数据提供商: ${providerName}`);
+    console.log(`📊 数据提供商: 高德地图`);
 
     // 设置 GitHub Action 输出
     core.setOutput("status", "success");
@@ -159,7 +135,7 @@ async function run() {
         ],
         ["🏙️ 城市", cityName],
         ["🌡️ 温度", `${weatherData.temperature}°C`],
-        ["📊 数据源", providerName],
+        ["📊 数据源", "高德地图"],
         ["📧 收件人数量", emailList.length.toString()],
         ["⏰ 发送时间", new Date().toLocaleString("zh-CN")],
       ])

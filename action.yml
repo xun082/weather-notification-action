@@ -1,5 +1,5 @@
 name: 'Weather Notification Action'
-description: '🌤️ 功能强大的天气通知Action，支持高德地图和OpenWeatherMap双数据源'
+description: '🌤️ 功能强大的天气通知Action，基于高德地图数据源'
 author: 'Weather Notification Team'
 
 branding:
@@ -8,19 +8,10 @@ branding:
 
 inputs:
   # 天气API配置
-  weather_provider:
-    description: '天气数据提供商 (amap 或 openweather)'
-    required: false
-    default: 'amap'
-  
   amap_api_key:
     description: '高德地图API密钥'
-    required: false
-    
-  openweather_api_key:
-    description: 'OpenWeatherMap API密钥'
-    required: false
-    
+    required: true
+  
   # 城市配置
   city:
     description: '城市名称或6位城市编码'
@@ -30,34 +21,34 @@ inputs:
   # 邮件服务器配置
   smtp_host:
     description: 'SMTP服务器地址'
-    required: true
+    required: false
     default: 'smtp.gmail.com'
     
   smtp_port:
-    description: 'SMTP端口'
+    description: 'SMTP端口号'
     required: false
     default: '587'
     
   smtp_user:
-    description: '发送邮箱地址'
+    description: 'SMTP用户名（邮箱地址）'
     required: true
     
   smtp_pass:
-    description: '邮箱密码或应用专用密码'
+    description: 'SMTP密码或应用专用密码'
     required: true
     
   # 收件人配置
   recipient_emails:
-    description: '收件人邮箱地址（多个用逗号分隔）'
+    description: '收件人邮箱地址，多个邮箱用逗号分隔'
     required: true
     
   # 邮件配置
   email_subject:
-    description: '邮件主题（可选，默认自动生成）'
+    description: '邮件主题（可选）'
     required: false
     
   sender_name:
-    description: '发送者名称'
+    description: '发件人名称'
     required: false
     default: '天气通知助手'
 
@@ -69,7 +60,7 @@ outputs:
   weather_data:
     description: '天气数据JSON字符串'
   recipients_count:
-    description: '邮件发送的收件人数量'
+    description: '收件人数量'
 
 runs:
   using: 'node20'

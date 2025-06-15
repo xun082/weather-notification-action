@@ -1,0 +1,34 @@
+name: Daily Weather Notification
+
+on:
+  schedule:
+    # 每天早上8点(UTC)发送天气信息
+    - cron: "0 8 * * *"
+  workflow_dispatch: # 支持手动触发
+
+jobs:
+  send-weather:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Send Weather Notification
+        uses: xun082/weather-notification-action@v2.3.0
+        with:
+          # 天气API配置
+          amap_api_key: 3e46407e2b55ebac91e7f4c30dd6407e
+
+          # 城市配置
+          city: "110000"
+
+          # 邮件服务器配置
+          smtp_host: "smtp.qq.com"
+          smtp_port: "587"
+          smtp_user: 2042204285@qq.com
+          smtp_pass: gjeyprzpgepbdbga
+
+          # 收件人邮箱
+          recipient_emails: "2042204285@qq.com"
+
+          # 可选配置
+          sender_name: "天气助手"
+          email_subject: "今日天气预报 🌤️"

@@ -51,7 +51,7 @@ jobs:
           amap_api_key: ${{ secrets.AMAP_API_KEY }}
 
           # 城市配置
-          city: "Beijing" # 或城市编码如 '110000'
+          city: "110000"
 
           # 邮件服务器配置
           smtp_host: "smtp.gmail.com"
@@ -59,8 +59,8 @@ jobs:
           smtp_user: ${{ secrets.SMTP_USER }}
           smtp_pass: ${{ secrets.SMTP_PASS }}
 
-          # 收件人配置（请替换为你的真实邮箱）
-          recipient_emails: "your-email@gmail.com,friend@qq.com"
+          # 收件人邮箱
+          recipient_emails: "friend@qq.com"
 
           # 可选配置
           sender_name: "天气助手"

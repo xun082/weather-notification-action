@@ -7,8 +7,7 @@
     "build": "ncc build src/index.js -o dist --license licenses.txt",
     "package": "pnpm run build && pnpm run package-check",
     "package-check": "test -f dist/index.js",
-    "start": "node src/index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node src/index.js"
   },
   "keywords": [
     "github-action",

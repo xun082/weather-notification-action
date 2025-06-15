@@ -15,7 +15,7 @@ jobs:
         uses: xun082/weather-notification-action@v2.3.0
         with:
           # 天气API配置
-          amap_api_key: 3e46407e2b55ebac91e7f4c30dd6407e
+          amap_api_key: “400d3d1618f5beb06eee956cb2779f78”
 
           # 城市配置
           city: "110000"

@@ -3195,373 +3195,6 @@ function copyFile(srcFile, destFile, force) {
 
 /***/ }),
 
-/***/ 6705:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-const fs = __nccwpck_require__(9896)
-const path = __nccwpck_require__(6928)
-const os = __nccwpck_require__(857)
-const crypto = __nccwpck_require__(6982)
-const packageJson = __nccwpck_require__(476)
-
-const version = packageJson.version
-
-const LINE = /(?:^|^)\s*(?:export\s+)?([\w.-]+)(?:\s*=\s*?|:\s+?)(\s*'(?:\\'|[^'])*'|\s*"(?:\\"|[^"])*"|\s*`(?:\\`|[^`])*`|[^#\r\n]+)?\s*(?:#.*)?(?:$|$)/mg
-
-// Parse src into an Object
-function parse (src) {
-  const obj = {}
-
-  // Convert buffer to string
-  let lines = src.toString()
-
-  // Convert line breaks to same format
-  lines = lines.replace(/\r\n?/mg, '\n')
-
-  let match
-  while ((match = LINE.exec(lines)) != null) {
-    const key = match[1]
-
-    // Default undefined or null to empty string
-    let value = (match[2] || '')
-
-    // Remove whitespace
-    value = value.trim()
-
-    // Check if double quoted
-    const maybeQuote = value[0]
-
-    // Remove surrounding quotes
-    value = value.replace(/^(['"`])([\s\S]*)\1$/mg, '$2')
-
-    // Expand newlines if double quoted
-    if (maybeQuote === '"') {
-      value = value.replace(/\\n/g, '\n')
-      value = value.replace(/\\r/g, '\r')
-    }
-
-    // Add to object
-    obj[key] = value
-  }
-
-  return obj
-}
-
-function _parseVault (options) {
-  const vaultPath = _vaultPath(options)
-
-  // Parse .env.vault
-  const result = DotenvModule.configDotenv({ path: vaultPath })
-  if (!result.parsed) {
-    const err = new Error(`MISSING_DATA: Cannot parse ${vaultPath} for an unknown reason`)
-    err.code = 'MISSING_DATA'
-    throw err
-  }
-
-  // handle scenario for comma separated keys - for use with key rotation
-  // example: DOTENV_KEY="dotenv://:key_1234@dotenvx.com/vault/.env.vault?environment=prod,dotenv://:key_7890@dotenvx.com/vault/.env.vault?environment=prod"
-  const keys = _dotenvKey(options).split(',')
-  const length = keys.length
-
-  let decrypted
-  for (let i = 0; i < length; i++) {
-    try {
-      // Get full key
-      const key = keys[i].trim()
-
-      // Get instructions for decrypt
-      const attrs = _instructions(result, key)
-
-      // Decrypt
-      decrypted = DotenvModule.decrypt(attrs.ciphertext, attrs.key)
-
-      break
-    } catch (error) {
-      // last key
-      if (i + 1 >= length) {
-        throw error
-      }
-      // try next key
-    }
-  }
-
-  // Parse decrypted .env string
-  return DotenvModule.parse(decrypted)
-}
-
-function _warn (message) {
-  console.log(`[dotenv@${version}][WARN] ${message}`)
-}
-
-function _debug (message) {
-  console.log(`[dotenv@${version}][DEBUG] ${message}`)
-}
-
-function _dotenvKey (options) {
-  // prioritize developer directly setting options.DOTENV_KEY
-  if (options && options.DOTENV_KEY && options.DOTENV_KEY.length > 0) {
-    return options.DOTENV_KEY
-  }
-
-  // secondary infra already contains a DOTENV_KEY environment variable
-  if (process.env.DOTENV_KEY && process.env.DOTENV_KEY.length > 0) {
-    return process.env.DOTENV_KEY
-  }
-
-  // fallback to empty string
-  return ''
-}
-
-function _instructions (result, dotenvKey) {
-  // Parse DOTENV_KEY. Format is a URI
-  let uri
-  try {
-    uri = new URL(dotenvKey)
-  } catch (error) {
-    if (error.code === 'ERR_INVALID_URL') {
-      const err = new Error('INVALID_DOTENV_KEY: Wrong format. Must be in valid uri format like dotenv://:key_1234@dotenvx.com/vault/.env.vault?environment=development')
-      err.code = 'INVALID_DOTENV_KEY'
-      throw err
-    }
-
-    throw error
-  }
-
-  // Get decrypt key
-  const key = uri.password
-  if (!key) {
-    const err = new Error('INVALID_DOTENV_KEY: Missing key part')
-    err.code = 'INVALID_DOTENV_KEY'
-    throw err
-  }
-
-  // Get environment
-  const environment = uri.searchParams.get('environment')
-  if (!environment) {
-    const err = new Error('INVALID_DOTENV_KEY: Missing environment part')
-    err.code = 'INVALID_DOTENV_KEY'
-    throw err
-  }
-
-  // Get ciphertext payload
-  const environmentKey = `DOTENV_VAULT_${environment.toUpperCase()}`
-  const ciphertext = result.parsed[environmentKey] // DOTENV_VAULT_PRODUCTION
-  if (!ciphertext) {
-    const err = new Error(`NOT_FOUND_DOTENV_ENVIRONMENT: Cannot locate environment ${environmentKey} in your .env.vault file.`)
-    err.code = 'NOT_FOUND_DOTENV_ENVIRONMENT'
-    throw err
-  }
-
-  return { ciphertext, key }
-}
-
-function _vaultPath (options) {
-  let possibleVaultPath = null
-
-  if (options && options.path && options.path.length > 0) {
-    if (Array.isArray(options.path)) {
-      for (const filepath of options.path) {
-        if (fs.existsSync(filepath)) {
-          possibleVaultPath = filepath.endsWith('.vault') ? filepath : `${filepath}.vault`
-        }
-      }
-    } else {
-      possibleVaultPath = options.path.endsWith('.vault') ? options.path : `${options.path}.vault`
-    }
-  } else {
-    possibleVaultPath = path.resolve(process.cwd(), '.env.vault')
-  }
-
-  if (fs.existsSync(possibleVaultPath)) {
-    return possibleVaultPath
-  }
-
-  return null
-}
-
-function _resolveHome (envPath) {
-  return envPath[0] === '~' ? path.join(os.homedir(), envPath.slice(1)) : envPath
-}
-
-function _configVault (options) {
-  const debug = Boolean(options && options.debug)
-  if (debug) {
-    _debug('Loading env from encrypted .env.vault')
-  }
-
-  const parsed = DotenvModule._parseVault(options)
-
-  let processEnv = process.env
-  if (options && options.processEnv != null) {
-    processEnv = options.processEnv
-  }
-
-  DotenvModule.populate(processEnv, parsed, options)
-
-  return { parsed }
-}
-
-function configDotenv (options) {
-  const dotenvPath = path.resolve(process.cwd(), '.env')
-  let encoding = 'utf8'
-  const debug = Boolean(options && options.debug)
-
-  if (options && options.encoding) {
-    encoding = options.encoding
-  } else {
-    if (debug) {
-      _debug('No encoding is specified. UTF-8 is used by default')
-    }
-  }
-
-  let optionPaths = [dotenvPath] // default, look for .env
-  if (options && options.path) {
-    if (!Array.isArray(options.path)) {
-      optionPaths = [_resolveHome(options.path)]
-    } else {
-      optionPaths = [] // reset default
-      for (const filepath of options.path) {
-        optionPaths.push(_resolveHome(filepath))
-      }
-    }
-  }
-
-  // Build the parsed data in a temporary object (because we need to return it).  Once we have the final
-  // parsed data, we will combine it with process.env (or options.processEnv if provided).
-  let lastError
-  const parsedAll = {}
-  for (const path of optionPaths) {
-    try {
-      // Specifying an encoding returns a string instead of a buffer
-      const parsed = DotenvModule.parse(fs.readFileSync(path, { encoding }))
-
-      DotenvModule.populate(parsedAll, parsed, options)
-    } catch (e) {
-      if (debug) {
-        _debug(`Failed to load ${path} ${e.message}`)
-      }
-      lastError = e
-    }
-  }
-
-  let processEnv = process.env
-  if (options && options.processEnv != null) {
-    processEnv = options.processEnv
-  }
-
-  DotenvModule.populate(processEnv, parsedAll, options)
-
-  if (lastError) {
-    return { parsed: parsedAll, error: lastError }
-  } else {
-    return { parsed: parsedAll }
-  }
-}
-
-// Populates process.env from .env file
-function config (options) {
-  // fallback to original dotenv if DOTENV_KEY is not set
-  if (_dotenvKey(options).length === 0) {
-    return DotenvModule.configDotenv(options)
-  }
-
-  const vaultPath = _vaultPath(options)
-
-  // dotenvKey exists but .env.vault file does not exist
-  if (!vaultPath) {
-    _warn(`You set DOTENV_KEY but you are missing a .env.vault file at ${vaultPath}. Did you forget to build it?`)
-
-    return DotenvModule.configDotenv(options)
-  }
-
-  return DotenvModule._configVault(options)
-}
-
-function decrypt (encrypted, keyStr) {
-  const key = Buffer.from(keyStr.slice(-64), 'hex')
-  let ciphertext = Buffer.from(encrypted, 'base64')
-
-  const nonce = ciphertext.subarray(0, 12)
-  const authTag = ciphertext.subarray(-16)
-  ciphertext = ciphertext.subarray(12, -16)
-
-  try {
-    const aesgcm = crypto.createDecipheriv('aes-256-gcm', key, nonce)
-    aesgcm.setAuthTag(authTag)
-    return `${aesgcm.update(ciphertext)}${aesgcm.final()}`
-  } catch (error) {
-    const isRange = error instanceof RangeError
-    const invalidKeyLength = error.message === 'Invalid key length'
-    const decryptionFailed = error.message === 'Unsupported state or unable to authenticate data'
-
-    if (isRange || invalidKeyLength) {
-      const err = new Error('INVALID_DOTENV_KEY: It must be 64 characters long (or more)')
-      err.code = 'INVALID_DOTENV_KEY'
-      throw err
-    } else if (decryptionFailed) {
-      const err = new Error('DECRYPTION_FAILED: Please check your DOTENV_KEY')
-      err.code = 'DECRYPTION_FAILED'
-      throw err
-    } else {
-      throw error
-    }
-  }
-}
-
-// Populate process.env with parsed values
-function populate (processEnv, parsed, options = {}) {
-  const debug = Boolean(options && options.debug)
-  const override = Boolean(options && options.override)
-
-  if (typeof parsed !== 'object') {
-    const err = new Error('OBJECT_REQUIRED: Please check the processEnv argument being passed to populate')
-    err.code = 'OBJECT_REQUIRED'
-    throw err
-  }
-
-  // Set process.env
-  for (const key of Object.keys(parsed)) {
-    if (Object.prototype.hasOwnProperty.call(processEnv, key)) {
-      if (override === true) {
-        processEnv[key] = parsed[key]
-      }
-
-      if (debug) {
-        if (override === true) {
-          _debug(`"${key}" is already defined and WAS overwritten`)
-        } else {
-          _debug(`"${key}" is already defined and was NOT overwritten`)
-        }
-      }
-    } else {
-      processEnv[key] = parsed[key]
-    }
-  }
-}
-
-const DotenvModule = {
-  configDotenv,
-  _configVault,
-  _parseVault,
-  config,
-  decrypt,
-  parse,
-  populate
-}
-
-module.exports.configDotenv = DotenvModule.configDotenv
-module.exports._configVault = DotenvModule._configVault
-module.exports._parseVault = DotenvModule._parseVault
-module.exports.config = DotenvModule.config
-module.exports.decrypt = DotenvModule.decrypt
-module.exports.parse = DotenvModule.parse
-module.exports.populate = DotenvModule.populate
-
-module.exports = DotenvModule
-
-
-/***/ }),
-
 /***/ 4326:
 /***/ ((module) => {
 
@@ -39575,22 +39208,274 @@ module.exports = {
 
 /***/ }),
 
+/***/ 7514:
+/***/ ((module) => {
+
+function generateWeatherEmailHTML(weatherData) {
+  // 生成预报信息HTML
+  const forecastHTML = generateForecastHTML(weatherData.forecast);
+
+  return `<!DOCTYPE html>
+  <html lang="zh-CN">
+  <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>🌤️ ${weatherData.province}${weatherData.city}天气预报</title>
+      <style>
+          body {
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+              line-height: 1.6;
+              color: #333;
+              max-width: 600px;
+              margin: 0 auto;
+              padding: 20px;
+              background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          }
+          .container {
+              background: white;
+              border-radius: 15px;
+              padding: 30px;
+              box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+              margin: 20px 0;
+          }
+          .header {
+              text-align: center;
+              margin-bottom: 30px;
+              padding-bottom: 20px;
+              border-bottom: 2px solid #f0f0f0;
+          }
+          .header h1 {
+              color: #2c3e50;
+              margin: 0;
+              font-size: 28px;
+              font-weight: 700;
+          }
+          .location {
+              color: #7f8c8d;
+              font-size: 16px;
+              margin-top: 5px;
+          }
+          .current-weather {
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              background: linear-gradient(135deg, #74b9ff, #0984e3);
+              color: white;
+              padding: 25px;
+              border-radius: 12px;
+              margin-bottom: 25px;
+          }
+          .current-info {
+              flex: 1;
+          }
+          .temperature {
+              font-size: 48px;
+              font-weight: bold;
+              margin: 0;
+              text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+          }
+          .weather-desc {
+              font-size: 18px;
+              margin: 5px 0;
+              opacity: 0.9;
+          }
+          .weather-details {
+              display: grid;
+              grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+              gap: 15px;
+              margin: 25px 0;
+          }
+          .detail-item {
+              background: #f8f9fa;
+              padding: 15px;
+              border-radius: 8px;
+              text-align: center;
+              border-left: 4px solid #3498db;
+          }
+          .detail-label {
+              font-size: 12px;
+              color: #7f8c8d;
+              text-transform: uppercase;
+              margin-bottom: 5px;
+          }
+          .detail-value {
+              font-size: 18px;
+              font-weight: bold;
+              color: #2c3e50;
+          }
+          .forecast-section {
+              margin-top: 30px;
+              padding-top: 20px;
+              border-top: 2px solid #f0f0f0;
+          }
+          .forecast-section h3 {
+              color: #2c3e50;
+              text-align: center;
+              margin-bottom: 20px;
+          }
+          .forecast-container {
+              display: flex;
+              gap: 15px;
+              flex-wrap: wrap;
+              justify-content: space-around;
+          }
+          .forecast-item {
+              background: linear-gradient(135deg, #a8e6cf, #7fcdcd);
+              padding: 15px;
+              border-radius: 10px;
+              text-align: center;
+              flex: 1;
+              min-width: 120px;
+              color: #2c3e50;
+          }
+          .forecast-date {
+              margin-bottom: 10px;
+          }
+          .date {
+              font-size: 14px;
+              font-weight: bold;
+          }
+          .weekday {
+              font-size: 12px;
+              opacity: 0.8;
+          }
+          .temp-range {
+              font-size: 16px;
+              font-weight: bold;
+              margin: 5px 0;
+          }
+          .wind-info {
+              font-size: 12px;
+              opacity: 0.8;
+          }
+          .footer {
+              text-align: center;
+              margin-top: 30px;
+              padding-top: 20px;
+              border-top: 1px solid #eee;
+              color: #7f8c8d;
+              font-size: 14px;
+          }
+          .report-time {
+              background: #e8f4fd;
+              padding: 10px;
+              border-radius: 6px;
+              margin: 15px 0;
+              text-align: center;
+              font-size: 14px;
+              color: #2980b9;
+          }
+          @media (max-width: 480px) {
+              .current-weather {
+                  flex-direction: column;
+                  text-align: center;
+              }
+              .weather-details {
+                  grid-template-columns: 1fr;
+              }
+              .forecast-container {
+                  flex-direction: column;
+              }
+          }
+      </style>
+  </head>
+  <body>
+      <div class="container">
+          <div class="header">
+              <h1>🌤️ ${weatherData.province}${weatherData.city}天气预报</h1>
+              <div class="location">📍 ${weatherData.city} (${weatherData.adcode})</div>
+          </div>
+          
+          <div class="current-weather">
+              <div class="current-info">
+                  <div class="temperature">${weatherData.temperature}°C</div>
+                  <div class="weather-desc">☁️ ${weatherData.weather}</div>
+              </div>
+          </div>
+          
+          <div class="weather-details">
+              <div class="detail-item">
+                  <div class="detail-label">💧 湿度</div>
+                  <div class="detail-value">${weatherData.humidity}%</div>
+              </div>
+              <div class="detail-item">
+                  <div class="detail-label">🌬️ 风向</div>
+                  <div class="detail-value">${weatherData.windDirection}</div>
+              </div>
+              <div class="detail-item">
+                  <div class="detail-label">💨 风力</div>
+                  <div class="detail-value">${weatherData.windPower}级</div>
+              </div>
+          </div>
+          
+          <div class="report-time">
+              ⏰ 数据更新时间: ${weatherData.reportTime}
+          </div>
+          
+          ${forecastHTML}
+      </div>
+      
+      <div class="footer">
+          <p>🤖 由 GitHub Actions 自动发送 | 数据来源: 高德地图</p>
+          <p>祝您度过美好的一天！ 🌈</p>
+      </div>
+  </body>
+  </html>`;
+}
+
+// 生成预报信息HTML的辅助函数
+function generateForecastHTML(forecast) {
+  if (!forecast || !Array.isArray(forecast) || forecast.length === 0) {
+    return "";
+  }
+
+  const weekdays = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
+
+  let forecastHTML = `
+      <div class="forecast-section">
+          <h3>📅 未来3天天气预报</h3>
+          <div class="forecast-container">`;
+
+  forecast.slice(0, 3).forEach((day) => {
+    const date = new Date(day.date);
+    const weekday = weekdays[date.getDay()];
+
+    forecastHTML += `
+              <div class="forecast-item">
+                  <div class="forecast-date">
+                      <div class="date">${day.date}</div>
+                      <div class="weekday">${weekday}</div>
+                  </div>
+                  <div class="forecast-weather">
+                      <div class="weather-desc">${day.dayweather}</div>
+                      <div class="temp-range">${day.nighttemp}°C - ${day.daytemp}°C</div>
+                      <div class="wind-info">${day.daywind} ${day.daypower}级</div>
+                  </div>
+              </div>`;
+  });
+
+  forecastHTML += `
+          </div>
+      </div>`;
+
+  return forecastHTML;
+}
+
+module.exports = {
+  generateWeatherEmailHTML,
+};
+
+
+/***/ }),
+
 /***/ 6295:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 const core = __nccwpck_require__(9999);
-const {
-  getWeatherData,
-  getCityCode,
-  cityCodeMap,
-} = __nccwpck_require__(8503);
+const { getWeatherData } = __nccwpck_require__(8503);
 
-// GitHub Action 入口文件
 async function run() {
   try {
-    console.log("🚀 Weather Notification Action 开始执行...");
-
-    // 从 GitHub Action inputs 读取参数
     const inputs = {
       amapApiKey: core.getInput("amap_api_key"),
       city: core.getInput("city") || "Beijing",
@@ -39603,7 +39488,6 @@ async function run() {
       senderName: core.getInput("sender_name") || "天气通知助手",
     };
 
-    // 验证必需参数
     if (!inputs.smtpUser || !inputs.smtpPass) {
       throw new Error("❌ 邮件配置不完整：请提供 smtp_user 和 smtp_pass");
     }
@@ -39612,35 +39496,11 @@ async function run() {
       throw new Error("❌ 收件人邮箱不能为空：请提供 recipient_emails");
     }
 
-    // 验证高德地图API配置
     if (!inputs.amapApiKey) {
       throw new Error("❌ 请提供 amap_api_key");
     }
 
-    // 设置环境变量供主模块使用
-    process.env.AMAP_API_KEY = inputs.amapApiKey;
-    process.env.CITY = inputs.city;
-    process.env.SMTP_HOST = inputs.smtpHost;
-    process.env.SMTP_PORT = inputs.smtpPort;
-    process.env.SMTP_USER = inputs.smtpUser;
-    process.env.SMTP_PASS = inputs.smtpPass;
-    process.env.RECIPIENT_EMAILS = inputs.recipientEmails;
-
-    console.log(`📡 数据提供商: 高德地图`);
     console.log(`📍 查询城市: ${inputs.city}`);
-
-    // 显示城市编码信息
-    const cityCode = getCityCode(inputs.city);
-    console.log(`🏙️ 城市编码: ${cityCode}`);
-
-    if (/^\d{6}$/.test(inputs.city)) {
-      const cities = Object.keys(cityCodeMap).filter(
-        (city) => cityCodeMap[city] === inputs.city
-      );
-      if (cities.length > 0) {
-        console.log(`📍 对应城市: ${cities.join(", ")}`);
-      }
-    }
 
     // 解析邮箱列表
     const emailList = inputs.recipientEmails
@@ -39651,7 +39511,7 @@ async function run() {
 
     // 获取天气数据
     console.log("🌤️ 正在获取天气信息...");
-    const weatherData = await getWeatherData(inputs.city);
+    const weatherData = await getWeatherData(inputs.city, inputs.amapApiKey);
 
     // 发送邮件
     console.log("📬 正在发送邮件...");
@@ -39675,8 +39535,7 @@ async function run() {
         "zh-CN"
       )} (高德地图)`;
 
-    // 使用weather-notification模块发送邮件
-    const { generateWeatherEmailHTML } = __nccwpck_require__(8503);
+    const { generateWeatherEmailHTML } = __nccwpck_require__(7514);
     const nodemailer = __nccwpck_require__(9892);
 
     const transporter = nodemailer.createTransport(smtpConfig);
@@ -39696,7 +39555,6 @@ async function run() {
     console.log(`🌡️ 当前温度: ${weatherData.temperature}°C`);
     console.log(`📊 数据提供商: 高德地图`);
 
-    // 设置 GitHub Action 输出
     core.setOutput("status", "success");
     core.setOutput(
       "message",
@@ -39749,195 +39607,129 @@ module.exports = { run };
 /***/ }),
 
 /***/ 8503:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+/***/ ((module) => {
 
-(__nccwpck_require__(6705).config)();
+// 获取实时天气数据
+async function fetchLiveWeather(city, amapApiKey) {
+  const liveUrl = `https://restapi.amap.com/v3/weather/weatherInfo?key=${amapApiKey}&city=${city}&extensions=base`;
+  console.log(
+    `🌐 请求高德地图实时天气API: ${liveUrl.replace(amapApiKey, "***")}`
+  );
 
-// 配置信息
-const config = {
-  weather: {
-    amapApiKey: process.env.AMAP_API_KEY,
-    city: process.env.CITY || "Beijing",
-    cityCode: process.env.CITY_CODE || "110000", // 高德地图城市编码
-  },
-};
-
-// 城市编码映射表（常用城市）
-const cityCodeMap = {
-  // 直辖市
-  北京: "110000",
-  Beijing: "110000",
-  上海: "310000",
-  Shanghai: "310000",
-  天津: "120000",
-  Tianjin: "120000",
-  重庆: "500000",
-  Chongqing: "500000",
-
-  // 省会城市
-  广州: "440100",
-  Guangzhou: "440100",
-  深圳: "440300",
-  Shenzhen: "440300",
-  杭州: "330100",
-  Hangzhou: "330100",
-  南京: "320100",
-  Nanjing: "320100",
-  武汉: "420100",
-  Wuhan: "420100",
-  成都: "510100",
-  Chengdu: "510100",
-  西安: "610100",
-  "Xi'an": "610100",
-  郑州: "410100",
-  Zhengzhou: "410100",
-  济南: "370100",
-  Jinan: "370100",
-  沈阳: "210100",
-  Shenyang: "210100",
-  长春: "220100",
-  Changchun: "220100",
-  哈尔滨: "230100",
-  Harbin: "230100",
-  石家庄: "130100",
-  Shijiazhuang: "130100",
-  太原: "140100",
-  Taiyuan: "140100",
-  呼和浩特: "150100",
-  Hohhot: "150100",
-  南宁: "450100",
-  Nanning: "450100",
-  昆明: "530100",
-  Kunming: "530100",
-  贵阳: "520100",
-  Guiyang: "520100",
-  拉萨: "540100",
-  Lhasa: "540100",
-  兰州: "620100",
-  Lanzhou: "620100",
-  西宁: "630100",
-  Xining: "630100",
-  银川: "640100",
-  Yinchuan: "640100",
-  乌鲁木齐: "650100",
-  Urumqi: "650100",
-  海口: "460100",
-  Haikou: "460100",
-  福州: "350100",
-  Fuzhou: "350100",
-  长沙: "430100",
-  Changsha: "430100",
-  南昌: "360100",
-  Nanchang: "360100",
-  合肥: "340100",
-  Hefei: "340100",
-};
-
-// 获取城市编码
-function getCityCode(cityName) {
-  // 如果直接提供了城市编码
-  if (/^\d{6}$/.test(cityName)) {
-    return cityName;
+  const response = await fetch(liveUrl);
+  if (!response.ok) {
+    throw new Error(`HTTP错误: ${response.status}`);
   }
 
-  // 从映射表中查找
-  const code = cityCodeMap[cityName];
-  if (code) {
-    return code;
+  const data = await response.json();
+  console.log(`📊 实时天气API响应状态: ${data.status}`);
+
+  if (data.status !== "1") {
+    throw new Error(`高德地图实时天气API错误: ${data.info || "未知错误"}`);
   }
 
-  // 默认返回北京编码
-  console.warn(`未找到城市 "${cityName}" 的编码，使用默认城市北京`);
-  return "110000";
+  if (!data.lives || !Array.isArray(data.lives) || data.lives.length === 0) {
+    throw new Error("高德地图API返回数据格式错误: lives数组为空或不存在");
+  }
+
+  const live = data.lives[0];
+  if (!live.city || live.temperature === undefined) {
+    throw new Error("高德地图API返回数据不完整: 缺少必要字段");
+  }
+
+  console.log(`🌡️ 实时天气数据获取成功: ${live.city} ${live.temperature}°C`);
+  return live;
+}
+
+// 获取预报天气数据
+async function fetchForecastWeather(city, amapApiKey) {
+  const forecastUrl = `https://restapi.amap.com/v3/weather/weatherInfo?key=${amapApiKey}&city=${city}&extensions=all`;
+  console.log(
+    `🌐 请求高德地图预报天气API: ${forecastUrl.replace(amapApiKey, "***")}`
+  );
+
+  const response = await fetch(forecastUrl);
+  if (!response.ok) {
+    throw new Error(`HTTP错误: ${response.status}`);
+  }
+
+  const data = await response.json();
+  console.log(`📊 预报天气API响应状态: ${data.status}`);
+
+  if (data.status !== "1") {
+    throw new Error(`高德地图预报天气API错误: ${data.info || "未知错误"}`);
+  }
+
+  if (
+    !data.forecasts ||
+    !Array.isArray(data.forecasts) ||
+    data.forecasts.length === 0
+  ) {
+    throw new Error(
+      "高德地图预报API返回数据格式错误: forecasts数组为空或不存在"
+    );
+  }
+
+  return data.forecasts[0];
 }
 
 // 使用高德地图API获取天气信息
-async function getAmapWeatherData(cityCode) {
+async function getWeatherData(city, amapApiKey) {
+  if (!amapApiKey) {
+    throw new Error("请提供高德地图API密钥");
+  }
+
+  if (!city) {
+    throw new Error("请提供城市名称或编码");
+  }
+
+  console.log(`🏙️ 查询城市: ${city}`);
+
   try {
-    const amapApiKey = process.env.AMAP_API_KEY;
+    // 获取实时天气数据和预报数据
+    const [liveData, forecastData] = await Promise.allSettled([
+      fetchLiveWeather(city, amapApiKey),
+      fetchForecastWeather(city, amapApiKey),
+    ]);
 
-    // 首先获取实时天气数据 (extensions=base)
-    const liveUrl = `https://restapi.amap.com/v3/weather/weatherInfo?key=${amapApiKey}&city=${cityCode}&extensions=base`;
-    console.log(
-      `🌐 请求高德地图实时天气API: ${liveUrl.replace(amapApiKey, "***")}`
-    );
-
-    const liveResponse = await fetch(liveUrl);
-    if (!liveResponse.ok) {
-      throw new Error(`HTTP错误: ${liveResponse.status}`);
+    // 处理实时天气数据（必需）
+    if (liveData.status === "rejected") {
+      throw liveData.reason;
     }
 
-    const liveData = await liveResponse.json();
-    console.log(`📊 实时天气API响应状态: ${liveData.status}`);
+    const weatherInfo = liveData.value;
 
-    if (liveData.status !== "1") {
-      throw new Error(
-        `高德地图实时天气API错误: ${liveData.info || "未知错误"}`
-      );
-    }
-
-    // 检查 lives 数组
-    if (
-      !liveData.lives ||
-      !Array.isArray(liveData.lives) ||
-      liveData.lives.length === 0
-    ) {
-      throw new Error(`高德地图API返回数据格式错误: lives数组为空或不存在`);
-    }
-
-    const live = liveData.lives[0];
-
-    // 检查必要的字段
-    if (!live.city || live.temperature === undefined) {
-      throw new Error(`高德地图API返回数据不完整: 缺少必要字段`);
-    }
-
-    console.log(`🌡️ 实时天气数据获取成功: ${live.city} ${live.temperature}°C`);
-
-    // 获取预报天气数据 (extensions=all)
+    // 处理预报数据（可选）
     let forecast = null;
-    try {
-      const forecastUrl = `https://restapi.amap.com/v3/weather/weatherInfo?key=${amapApiKey}&city=${cityCode}&extensions=all`;
+    if (forecastData.status === "fulfilled") {
+      forecast = forecastData.value;
       console.log(
-        `🌐 请求高德地图预报天气API: ${forecastUrl.replace(amapApiKey, "***")}`
+        `📅 预报天气数据获取成功: ${forecast?.casts?.length || 0} 天预报`
       );
-
-      const forecastResponse = await fetch(forecastUrl);
-      if (forecastResponse.ok) {
-        const forecastData = await forecastResponse.json();
-        console.log(`📊 预报天气API响应状态: ${forecastData.status}`);
-
-        if (
-          forecastData.status === "1" &&
-          forecastData.forecasts &&
-          forecastData.forecasts.length > 0
-        ) {
-          forecast = forecastData.forecasts[0];
-          console.log(
-            `📅 预报天气数据获取成功: ${forecast.casts?.length || 0} 天预报`
-          );
-        }
-      }
-    } catch (forecastError) {
+    } else {
       console.warn(
         "获取预报天气数据失败，将只返回实时数据:",
-        forecastError.message
+        forecastData.reason?.message
       );
     }
 
     return {
       provider: "amap",
-      city: live.city,
-      province: live.province,
-      adcode: live.adcode,
-      temperature: parseInt(live.temperature),
-      temperatureFloat: parseFloat(live.temperature_float || live.temperature),
-      humidity: parseInt(live.humidity || 0),
-      humidityFloat: parseFloat(live.humidity_float || live.humidity || 0),
-      weather: live.weather,
-      windDirection: live.winddirection,
-      windPower: live.windpower,
-      reportTime: live.reporttime,
+      city: weatherInfo.city,
+      province: weatherInfo.province,
+      adcode: weatherInfo.adcode,
+      temperature: parseInt(weatherInfo.temperature),
+      temperatureFloat: parseFloat(
+        weatherInfo.temperature_float || weatherInfo.temperature
+      ),
+      humidity: parseInt(weatherInfo.humidity || 0),
+      humidityFloat: parseFloat(
+        weatherInfo.humidity_float || weatherInfo.humidity || 0
+      ),
+      weather: weatherInfo.weather,
+      windDirection: weatherInfo.winddirection,
+      windPower: weatherInfo.windpower,
+      reportTime: weatherInfo.reporttime,
       forecast: forecast ? forecast.casts : null,
     };
   } catch (error) {
@@ -39946,288 +39738,9 @@ async function getAmapWeatherData(cityCode) {
   }
 }
 
-// 获取天气数据的统一接口
-async function getWeatherData(city) {
-  const amapApiKey = process.env.AMAP_API_KEY;
-
-  if (!amapApiKey) {
-    throw new Error("请设置 AMAP_API_KEY 环境变量");
-  }
-
-  const cityCode = getCityCode(city);
-  console.log(`🏙️ 城市: ${city}, 编码: ${cityCode}`);
-
-  return await getAmapWeatherData(cityCode);
-}
-
-// 生成高德地图天气邮件HTML内容
-function generateAmapWeatherEmailHTML(weatherData) {
-  // 生成预报信息HTML
-  let forecastHTML = "";
-  if (weatherData.forecast && weatherData.forecast.length > 0) {
-    forecastHTML = `
-        <div class="forecast-section">
-            <h3>📅 未来3天天气预报</h3>
-            <div class="forecast-container">
-    `;
-
-    weatherData.forecast.slice(0, 3).forEach((day) => {
-      const date = new Date(day.date);
-      const weekdays = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
-      const weekday = weekdays[date.getDay()];
-
-      forecastHTML += `
-                <div class="forecast-item">
-                    <div class="forecast-date">
-                        <div class="date">${day.date}</div>
-                        <div class="weekday">${weekday}</div>
-                    </div>
-                    <div class="forecast-weather">
-                        <div class="weather-desc">${day.dayweather}</div>
-                        <div class="temp-range">${day.nighttemp}°C - ${day.daytemp}°C</div>
-                        <div class="wind-info">${day.daywind} ${day.daypower}级</div>
-                    </div>
-                </div>
-            `;
-    });
-
-    forecastHTML += `
-            </div>
-        </div>
-    `;
-  }
-
-  return `
-    <!DOCTYPE html>
-    <html lang="zh-CN">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>🌤️ ${weatherData.province}${weatherData.city}天气预报</title>
-        <style>
-            body {
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-                line-height: 1.6;
-                color: #333;
-                max-width: 600px;
-                margin: 0 auto;
-                padding: 20px;
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            }
-            .container {
-                background: white;
-                border-radius: 15px;
-                padding: 30px;
-                box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-                margin: 20px 0;
-            }
-            .header {
-                text-align: center;
-                margin-bottom: 30px;
-                padding-bottom: 20px;
-                border-bottom: 2px solid #f0f0f0;
-            }
-            .header h1 {
-                color: #2c3e50;
-                margin: 0;
-                font-size: 28px;
-                font-weight: 700;
-            }
-            .location {
-                color: #7f8c8d;
-                font-size: 16px;
-                margin-top: 5px;
-            }
-            .current-weather {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                background: linear-gradient(135deg, #74b9ff, #0984e3);
-                color: white;
-                padding: 25px;
-                border-radius: 12px;
-                margin-bottom: 25px;
-            }
-            .current-info {
-                flex: 1;
-            }
-            .temperature {
-                font-size: 48px;
-                font-weight: bold;
-                margin: 0;
-                text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-            }
-            .weather-desc {
-                font-size: 18px;
-                margin: 5px 0;
-                opacity: 0.9;
-            }
-            .weather-details {
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-                gap: 15px;
-                margin: 25px 0;
-            }
-            .detail-item {
-                background: #f8f9fa;
-                padding: 15px;
-                border-radius: 8px;
-                text-align: center;
-                border-left: 4px solid #3498db;
-            }
-            .detail-label {
-                font-size: 12px;
-                color: #7f8c8d;
-                text-transform: uppercase;
-                margin-bottom: 5px;
-            }
-            .detail-value {
-                font-size: 18px;
-                font-weight: bold;
-                color: #2c3e50;
-            }
-            .forecast-section {
-                margin-top: 30px;
-                padding-top: 20px;
-                border-top: 2px solid #f0f0f0;
-            }
-            .forecast-section h3 {
-                color: #2c3e50;
-                text-align: center;
-                margin-bottom: 20px;
-            }
-            .forecast-container {
-                display: flex;
-                gap: 15px;
-                flex-wrap: wrap;
-                justify-content: space-around;
-            }
-            .forecast-item {
-                background: linear-gradient(135deg, #a8e6cf, #7fcdcd);
-                padding: 15px;
-                border-radius: 10px;
-                text-align: center;
-                flex: 1;
-                min-width: 120px;
-                color: #2c3e50;
-            }
-            .forecast-date {
-                margin-bottom: 10px;
-            }
-            .date {
-                font-size: 14px;
-                font-weight: bold;
-            }
-            .weekday {
-                font-size: 12px;
-                opacity: 0.8;
-            }
-            .temp-range {
-                font-size: 16px;
-                font-weight: bold;
-                margin: 5px 0;
-            }
-            .wind-info {
-                font-size: 12px;
-                opacity: 0.8;
-            }
-            .footer {
-                text-align: center;
-                margin-top: 30px;
-                padding-top: 20px;
-                border-top: 1px solid #eee;
-                color: #7f8c8d;
-                font-size: 14px;
-            }
-            .report-time {
-                background: #e8f4fd;
-                padding: 10px;
-                border-radius: 6px;
-                margin: 15px 0;
-                text-align: center;
-                font-size: 14px;
-                color: #2980b9;
-            }
-            @media (max-width: 480px) {
-                .current-weather {
-                    flex-direction: column;
-                    text-align: center;
-                }
-                .weather-details {
-                    grid-template-columns: 1fr;
-                }
-                .forecast-container {
-                    flex-direction: column;
-                }
-            }
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <div class="header">
-                <h1>🌤️ ${weatherData.province}${weatherData.city}天气预报</h1>
-                <div class="location">📍 ${weatherData.city} (${weatherData.adcode})</div>
-            </div>
-            
-            <div class="current-weather">
-                <div class="current-info">
-                    <div class="temperature">${weatherData.temperature}°C</div>
-                    <div class="weather-desc">☁️ ${weatherData.weather}</div>
-                </div>
-            </div>
-            
-            <div class="weather-details">
-                <div class="detail-item">
-                    <div class="detail-label">💧 湿度</div>
-                    <div class="detail-value">${weatherData.humidity}%</div>
-                </div>
-                <div class="detail-item">
-                    <div class="detail-label">🌬️ 风向</div>
-                    <div class="detail-value">${weatherData.windDirection}</div>
-                </div>
-                <div class="detail-item">
-                    <div class="detail-label">💨 风力</div>
-                    <div class="detail-value">${weatherData.windPower}级</div>
-                </div>
-            </div>
-            
-            <div class="report-time">
-                ⏰ 数据更新时间: ${weatherData.reportTime}
-            </div>
-            
-            ${forecastHTML}
-        </div>
-        
-        <div class="footer">
-            <p>🤖 由 GitHub Actions 自动发送 | 数据来源: 高德地图</p>
-            <p>祝您度过美好的一天！ 🌈</p>
-        </div>
-    </body>
-    </html>
-  `;
-}
-
-// 统一的邮件HTML生成接口
-function generateWeatherEmailHTML(weatherData) {
-  if (weatherData.provider === "amap") {
-    return generateAmapWeatherEmailHTML(weatherData);
-  } else {
-    throw new Error("只支持高德地图天气数据");
-  }
-}
-
-// 导出工具函数，便于测试和其他模块使用
 module.exports = {
   getWeatherData,
-  getAmapWeatherData,
-  generateWeatherEmailHTML,
-  generateAmapWeatherEmailHTML,
-  getCityCode,
-  cityCodeMap,
 };
-
-// 如果直接运行此文件，提示使用正确的入口
-if (false) {}
 
 
 /***/ }),
@@ -42110,14 +41623,6 @@ function parseParams (str) {
 
 module.exports = parseParams
 
-
-/***/ }),
-
-/***/ 476:
-/***/ ((module) => {
-
-"use strict";
-module.exports = /*#__PURE__*/JSON.parse('{"name":"dotenv","version":"16.5.0","description":"Loads environment variables from .env file","main":"lib/main.js","types":"lib/main.d.ts","exports":{".":{"types":"./lib/main.d.ts","require":"./lib/main.js","default":"./lib/main.js"},"./config":"./config.js","./config.js":"./config.js","./lib/env-options":"./lib/env-options.js","./lib/env-options.js":"./lib/env-options.js","./lib/cli-options":"./lib/cli-options.js","./lib/cli-options.js":"./lib/cli-options.js","./package.json":"./package.json"},"scripts":{"dts-check":"tsc --project tests/types/tsconfig.json","lint":"standard","pretest":"npm run lint && npm run dts-check","test":"tap run --allow-empty-coverage --disable-coverage --timeout=60000","test:coverage":"tap run --show-full-coverage --timeout=60000 --coverage-report=lcov","prerelease":"npm test","release":"standard-version"},"repository":{"type":"git","url":"git://github.com/motdotla/dotenv.git"},"homepage":"https://github.com/motdotla/dotenv#readme","funding":"https://dotenvx.com","keywords":["dotenv","env",".env","environment","variables","config","settings"],"readmeFilename":"README.md","license":"BSD-2-Clause","devDependencies":{"@types/node":"^18.11.3","decache":"^4.6.2","sinon":"^14.0.1","standard":"^17.0.0","standard-version":"^9.5.0","tap":"^19.2.0","typescript":"^4.8.4"},"engines":{"node":">=12"},"browser":{"fs":false}}');
 
 /***/ }),
 

@@ -1,16 +1,8 @@
 const core = require("@actions/core");
-const {
-  getWeatherData,
-  getCityCode,
-  cityCodeMap,
-} = require("./weather-notification");
+const { getWeatherData } = require("./weather-notification");
 
-// GitHub Action 入口文件
 async function run() {
   try {
-    console.log("🚀 Weather Notification Action 开始执行...");
-
-    // 从 GitHub Action inputs 读取参数
     const inputs = {
       amapApiKey: core.getInput("amap_api_key"),
       city: core.getInput("city") || "Beijing",
@@ -23,7 +15,6 @@ async function run() {
       senderName: core.getInput("sender_name") || "天气通知助手",
     };
 
-    // 验证必需参数
     if (!inputs.smtpUser || !inputs.smtpPass) {
       throw new Error("❌ 邮件配置不完整：请提供 smtp_user 和 smtp_pass");
     }
@@ -32,35 +23,11 @@ async function run() {
       throw new Error("❌ 收件人邮箱不能为空：请提供 recipient_emails");
     }
 
-    // 验证高德地图API配置
     if (!inputs.amapApiKey) {
       throw new Error("❌ 请提供 amap_api_key");
     }
 
-    // 设置环境变量供主模块使用
-    process.env.AMAP_API_KEY = inputs.amapApiKey;
-    process.env.CITY = inputs.city;
-    process.env.SMTP_HOST = inputs.smtpHost;
-    process.env.SMTP_PORT = inputs.smtpPort;
-    process.env.SMTP_USER = inputs.smtpUser;
-    process.env.SMTP_PASS = inputs.smtpPass;
-    process.env.RECIPIENT_EMAILS = inputs.recipientEmails;
-
-    console.log(`📡 数据提供商: 高德地图`);
     console.log(`📍 查询城市: ${inputs.city}`);
-
-    // 显示城市编码信息
-    const cityCode = getCityCode(inputs.city);
-    console.log(`🏙️ 城市编码: ${cityCode}`);
-
-    if (/^\d{6}$/.test(inputs.city)) {
-      const cities = Object.keys(cityCodeMap).filter(
-        (city) => cityCodeMap[city] === inputs.city
-      );
-      if (cities.length > 0) {
-        console.log(`📍 对应城市: ${cities.join(", ")}`);
-      }
-    }
 
     // 解析邮箱列表
     const emailList = inputs.recipientEmails
@@ -71,7 +38,7 @@ async function run() {
 
     // 获取天气数据
     console.log("🌤️ 正在获取天气信息...");
-    const weatherData = await getWeatherData(inputs.city);
+    const weatherData = await getWeatherData(inputs.city, inputs.amapApiKey);
 
     // 发送邮件
     console.log("📬 正在发送邮件...");
@@ -95,8 +62,7 @@ async function run() {
         "zh-CN"
       )} (高德地图)`;
 
-    // 使用weather-notification模块发送邮件
-    const { generateWeatherEmailHTML } = require("./weather-notification");
+    const { generateWeatherEmailHTML } = require("./html");
     const nodemailer = require("nodemailer");
 
     const transporter = nodemailer.createTransport(smtpConfig);
@@ -116,7 +82,6 @@ async function run() {
     console.log(`🌡️ 当前温度: ${weatherData.temperature}°C`);
     console.log(`📊 数据提供商: 高德地图`);
 
-    // 设置 GitHub Action 输出
     core.setOutput("status", "success");
     core.setOutput(
       "message",
